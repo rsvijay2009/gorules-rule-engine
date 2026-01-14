@@ -1,0 +1,140 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Fact Registry Schema",
+  "description": "Central governance schema for all business facts used in rules",
+  "type": "object",
+  "required": ["version", "facts"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Semantic version of the fact registry"
+    },
+    "facts": {
+      "type": "array",
+      "description": "Array of fact definitions",
+      "items": {
+        "$ref": "#/definitions/fact"
+      }
+    }
+  },
+  "definitions": {
+    "fact": {
+      "type": "object",
+      "required": [
+        "name",
+        "type",
+        "description",
+        "owner",
+        "lifecycle_state",
+        "version",
+        "source_system"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "description": "Fact name in snake_case (e.g., customer_age, pan_verified)"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "string",
+            "integer",
+            "number",
+            "boolean",
+            "date",
+            "datetime",
+            "enum"
+          ],
+          "description": "Data type of the fact"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 10,
+          "description": "Clear business description of what this fact represents"
+        },
+        "owner": {
+          "type": "string",
+          "description": "Team or individual responsible for this fact (e.g., risk-team, kyc-team)"
+        },
+        "lifecycle_state": {
+          "type": "string",
+          "enum": ["DRAFT", "ACTIVE", "DEPRECATED", "RETIRED"],
+          "description": "Current lifecycle state of the fact"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^v[0-9]+$",
+          "description": "Fact version (e.g., v1, v2)"
+        },
+        "source_system": {
+          "type": "string",
+          "description": "Originating system or service (e.g., kyc-service, customer-db)"
+        },
+        "allowed_values": {
+          "type": "array",
+          "description": "For enum types, the list of allowed values",
+          "items": {
+            "type": "string"
+          }
+        },
+        "default_value": {
+          "description": "Default value if fact is missing (optional)"
+        },
+        "validation_rules": {
+          "type": "object",
+          "description": "Additional validation constraints",
+          "properties": {
+            "min": {
+              "type": "number",
+              "description": "Minimum value for numeric types"
+            },
+            "max": {
+              "type": "number",
+              "description": "Maximum value for numeric types"
+            },
+            "pattern": {
+              "type": "string",
+              "description": "Regex pattern for string types"
+            },
+            "min_length": {
+              "type": "integer",
+              "description": "Minimum length for string types"
+            },
+            "max_length": {
+              "type": "integer",
+              "description": "Maximum length for string types"
+            }
+          }
+        },
+        "deprecated_by": {
+          "type": "string",
+          "description": "If deprecated, the fact name that replaces this one"
+        },
+        "deprecated_date": {
+          "type": "string",
+          "format": "date",
+          "description": "Date when fact was deprecated"
+        },
+        "retirement_date": {
+          "type": "string",
+          "format": "date",
+          "description": "Planned date for fact retirement"
+        },
+        "tags": {
+          "type": "array",
+          "description": "Categorization tags (e.g., pii, sensitive, regulatory)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "examples": {
+          "type": "array",
+          "description": "Example values for documentation",
+          "items": {}
+        }
+      }
+    }
+  }
+}

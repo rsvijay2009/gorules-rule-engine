@@ -1,0 +1,255 @@
+{
+    "contentType": "application/vnd.gorules.decision",
+    "nodes": [
+        {
+            "id": "input-node",
+            "name": "Request",
+            "type": "inputNode",
+            "position": {
+                "x": 100,
+                "y": 200
+            }
+        },
+        {
+            "id": "decision-table-pan",
+            "name": "PAN Validation",
+            "type": "decisionTableNode",
+            "position": {
+                "x": 400,
+                "y": 100
+            },
+            "content": {
+                "hitPolicy": "first",
+                "inputs": [
+                    {
+                        "id": "input-1",
+                        "name": "pan_verification_status",
+                        "type": "expression",
+                        "field": "pan_verification_status"
+                    },
+                    {
+                        "id": "input-2",
+                        "name": "pan_name_match_score",
+                        "type": "expression",
+                        "field": "pan_name_match_score"
+                    }
+                ],
+                "outputs": [
+                    {
+                        "id": "output-1",
+                        "name": "pan_check_passed",
+                        "type": "expression",
+                        "field": "pan_check_passed"
+                    },
+                    {
+                        "id": "output-2",
+                        "name": "rejection_reason",
+                        "type": "expression",
+                        "field": "rejection_reason"
+                    }
+                ],
+                "rules": [
+                    {
+                        "input-1": "\"VERIFIED\"",
+                        "input-2": ">= 0.85",
+                        "output-1": "true",
+                        "output-2": "null"
+                    },
+                    {
+                        "input-1": "\"VERIFIED\"",
+                        "input-2": "< 0.85",
+                        "output-1": "false",
+                        "output-2": "\"PAN_NAME_MISMATCH\""
+                    },
+                    {
+                        "input-1": "\"INVALID\"",
+                        "input-2": "",
+                        "output-1": "false",
+                        "output-2": "\"PAN_INVALID\""
+                    },
+                    {
+                        "input-1": "\"NOT_VERIFIED\"",
+                        "input-2": "",
+                        "output-1": "false",
+                        "output-2": "\"PAN_INVALID\""
+                    },
+                    {
+                        "input-1": "\"ERROR\"",
+                        "input-2": "",
+                        "output-1": "false",
+                        "output-2": "\"PAN_INVALID\""
+                    }
+                ]
+            }
+        },
+        {
+            "id": "decision-table-eligibility",
+            "name": "KYC Eligibility Decision",
+            "type": "decisionTableNode",
+            "position": {
+                "x": 700,
+                "y": 200
+            },
+            "content": {
+                "hitPolicy": "first",
+                "inputs": [
+                    {
+                        "id": "input-1",
+                        "name": "pan_check_passed",
+                        "type": "expression",
+                        "field": "pan_check_passed"
+                    },
+                    {
+                        "id": "input-2",
+                        "name": "customer_age",
+                        "type": "expression",
+                        "field": "customer_age"
+                    },
+                    {
+                        "id": "input-3",
+                        "name": "cibil_score",
+                        "type": "expression",
+                        "field": "cibil_score"
+                    },
+                    {
+                        "id": "input-4",
+                        "name": "cibil_fetch_status",
+                        "type": "expression",
+                        "field": "cibil_fetch_status"
+                    },
+                    {
+                        "id": "input-5",
+                        "name": "dedupe_match_found",
+                        "type": "expression",
+                        "field": "dedupe_match_found"
+                    },
+                    {
+                        "id": "input-6",
+                        "name": "customer_state",
+                        "type": "expression",
+                        "field": "customer_state"
+                    }
+                ],
+                "outputs": [
+                    {
+                        "id": "output-1",
+                        "name": "kyc_eligibility_status",
+                        "type": "expression",
+                        "field": "kyc_eligibility_status"
+                    },
+                    {
+                        "id": "output-2",
+                        "name": "kyc_rejection_reason",
+                        "type": "expression",
+                        "field": "kyc_rejection_reason"
+                    }
+                ],
+                "rules": [
+                    {
+                        "_description": "PAN validation failed",
+                        "input-1": "false",
+                        "input-2": "",
+                        "input-3": "",
+                        "input-4": "",
+                        "input-5": "",
+                        "input-6": "",
+                        "output-1": "\"REJECTED\"",
+                        "output-2": "rejection_reason"
+                    },
+                    {
+                        "_description": "Age below threshold",
+                        "input-1": "true",
+                        "input-2": "< 21",
+                        "input-3": "",
+                        "input-4": "",
+                        "input-5": "",
+                        "input-6": "",
+                        "output-1": "\"REJECTED\"",
+                        "output-2": "\"AGE_BELOW_THRESHOLD\""
+                    },
+                    {
+                        "_description": "Duplicate customer found",
+                        "input-1": "true",
+                        "input-2": ">= 21",
+                        "input-3": "",
+                        "input-4": "",
+                        "input-5": "true",
+                        "input-6": "",
+                        "output-1": "\"REJECTED\"",
+                        "output-2": "\"DUPLICATE_CUSTOMER\""
+                    },
+                    {
+                        "_description": "CIBIL score too low",
+                        "input-1": "true",
+                        "input-2": ">= 21",
+                        "input-3": "< 650",
+                        "input-4": "\"SUCCESS\"",
+                        "input-5": "false",
+                        "input-6": "",
+                        "output-1": "\"REJECTED\"",
+                        "output-2": "\"CIBIL_SCORE_LOW\""
+                    },
+                    {
+                        "_description": "No CIBIL history - manual review",
+                        "input-1": "true",
+                        "input-2": ">= 21",
+                        "input-3": "",
+                        "input-4": "\"NO_HISTORY\"",
+                        "input-5": "false",
+                        "input-6": "",
+                        "output-1": "\"MANUAL_REVIEW\"",
+                        "output-2": "null"
+                    },
+                    {
+                        "_description": "CIBIL fetch failed - manual review",
+                        "input-1": "true",
+                        "input-2": ">= 21",
+                        "input-3": "",
+                        "input-4": "\"FAILURE\"",
+                        "input-5": "false",
+                        "input-6": "",
+                        "output-1": "\"MANUAL_REVIEW\"",
+                        "output-2": "null"
+                    },
+                    {
+                        "_description": "All checks passed - approved",
+                        "input-1": "true",
+                        "input-2": ">= 21",
+                        "input-3": ">= 650",
+                        "input-4": "\"SUCCESS\"",
+                        "input-5": "false",
+                        "input-6": "",
+                        "output-1": "\"APPROVED\"",
+                        "output-2": "null"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "output-node",
+            "name": "Response",
+            "type": "outputNode",
+            "position": {
+                "x": 1000,
+                "y": 200
+            }
+        }
+    ],
+    "edges": [
+        {
+            "id": "edge-1",
+            "sourceId": "input-node",
+            "targetId": "decision-table-pan"
+        },
+        {
+            "id": "edge-2",
+            "sourceId": "decision-table-pan",
+            "targetId": "decision-table-eligibility"
+        },
+        {
+            "id": "edge-3",
+            "sourceId": "decision-table-eligibility",
+            "targetId": "output-node"
+        }
+    ]
+}

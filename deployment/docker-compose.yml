@@ -1,0 +1,284 @@
+version: '3.8'
+
+services:
+  # ============================================================================
+  # GoRules Studio (Visual Rule Editor)
+  # ============================================================================
+  gorules-studio:
+    image: gorules/studio:latest
+    container_name: gorules-studio
+    ports:
+      - "3000:3000"
+    environment:
+      # Application Settings
+      - NODE_ENV=production
+      - PORT=3000
+      - BASE_URL=https://rules.company.com
+      
+      # Git Integration
+      - GIT_ENABLED=true
+      - GIT_PROVIDER=github  # or gitlab, bitbucket
+      - GIT_REPO_URL=https://github.com/company/bre-rules.git
+      - GIT_BRANCH=main
+      - GIT_TOKEN=${GITHUB_TOKEN}  # Set in .env file
+      
+      # Fact Registry Integration
+      - FACT_REGISTRY_ENABLED=true
+      - FACT_REGISTRY_URL=http://bre-platform:8000/api/v1/fact-registry/facts
+      - FACT_REGISTRY_STRICT_MODE=true  # Only allow facts from registry
+      
+      # Authentication (SSO)
+      - AUTH_ENABLED=true
+      - AUTH_PROVIDER=oidc  # OpenID Connect
+      - OIDC_ISSUER_URL=http://keycloak:8080/realms/bre-platform
+      - OIDC_CLIENT_ID=gorules-studio
+      - OIDC_CLIENT_SECRET=${OIDC_CLIENT_SECRET}
+      - OIDC_REDIRECT_URI=https://rules.company.com/auth/callback
+      
+      # Authorization (RBAC)
+      - RBAC_ENABLED=true
+      - RBAC_ADMIN_ROLE=bre-admin
+      - RBAC_EDITOR_ROLE=bre-editor
+      - RBAC_VIEWER_ROLE=bre-viewer
+      
+      # Rule Testing Integration
+      - TEST_API_ENABLED=true
+      - TEST_API_URL=http://bre-platform:8000/api/v1/decisions/test
+      
+      # Audit Logging
+      - AUDIT_LOG_ENABLED=true
+      - AUDIT_LOG_DESTINATION=postgres  # or elasticsearch, cloudwatch
+      - AUDIT_DB_URL=postgresql://postgres:postgres@postgres:5432/gorules_audit
+      
+      # Performance
+      - CACHE_ENABLED=true
+      - CACHE_TTL=300  # 5 minutes
+      
+    volumes:
+      # Persistent storage for local rule cache
+      - gorules-data:/app/data
+      
+      # Mount Git SSH keys (if using SSH instead of HTTPS)
+      # - ./ssh-keys:/root/.ssh:ro
+      
+    networks:
+      - bre-network
+    
+    depends_on:
+      - keycloak
+      - postgres
+      - bre-platform
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ============================================================================
+  # Keycloak (SSO / Identity Provider)
+  # ============================================================================
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0
+    container_name: keycloak
+    ports:
+      - "8080:8080"
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:-admin123}
+      - KC_DB=postgres
+      - KC_DB_URL=jdbc:postgresql://postgres:5432/keycloak
+      - KC_DB_USERNAME=postgres
+      - KC_DB_PASSWORD=postgres
+      - KC_HOSTNAME=keycloak.company.com
+      - KC_HTTP_ENABLED=true
+      - KC_PROXY=edge
+    command:
+      - start-dev
+    volumes:
+      - keycloak-data:/opt/keycloak/data
+      # Import realm configuration on startup
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm.json:ro
+    networks:
+      - bre-network
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  # ============================================================================
+  # PostgreSQL (Audit Logs, Keycloak DB)
+  # ============================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_MULTIPLE_DATABASES=keycloak,gorules_audit,bre_platform
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres/init-multiple-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-dbs.sh:ro
+    networks:
+      - bre-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================================
+  # BRE Platform (FastAPI Decision Gateway)
+  # ============================================================================
+  bre-platform:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bre-platform
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+      - RULES_SOURCE=git
+      - GIT_REPO_URL=https://github.com/company/bre-rules.git
+      - GIT_BRANCH=main
+      - GIT_TOKEN=${GITHUB_TOKEN}
+      - RULES_REFRESH_INTERVAL=60  # Poll every 60 seconds
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/bre_platform
+      - AUDIT_ENABLED=true
+    volumes:
+      - bre-rules-cache:/app/rules
+    networks:
+      - bre-network
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================================================
+  # Git Sync Sidecar (Alternative to polling)
+  # ============================================================================
+  git-sync:
+    image: k8s.gcr.io/git-sync/git-sync:v3.6.9
+    container_name: git-sync
+    environment:
+      - GIT_SYNC_REPO=https://github.com/company/bre-rules.git
+      - GIT_SYNC_BRANCH=main
+      - GIT_SYNC_ROOT=/rules
+      - GIT_SYNC_DEST=current
+      - GIT_SYNC_WAIT=60  # Sync every 60 seconds
+      - GIT_SYNC_USERNAME=git
+      - GIT_SYNC_PASSWORD=${GITHUB_TOKEN}
+      - GIT_SYNC_MAX_SYNC_FAILURES=10
+    volumes:
+      - bre-rules-cache:/rules
+    networks:
+      - bre-network
+    restart: unless-stopped
+
+  # ============================================================================
+  # Nginx (Reverse Proxy / SSL Termination)
+  # ============================================================================
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx-cache:/var/cache/nginx
+    networks:
+      - bre-network
+    depends_on:
+      - gorules-studio
+      - bre-platform
+      - keycloak
+    restart: unless-stopped
+
+  # ============================================================================
+  # Prometheus (Metrics)
+  # ============================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    networks:
+      - bre-network
+    restart: unless-stopped
+
+  # ============================================================================
+  # Grafana (Dashboards)
+  # ============================================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin123}
+      - GF_AUTH_GENERIC_OAUTH_ENABLED=true
+      - GF_AUTH_GENERIC_OAUTH_NAME=Keycloak
+      - GF_AUTH_GENERIC_OAUTH_CLIENT_ID=grafana
+      - GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET=${GRAFANA_OAUTH_SECRET}
+      - GF_AUTH_GENERIC_OAUTH_AUTH_URL=http://keycloak:8080/realms/bre-platform/protocol/openid-connect/auth
+      - GF_AUTH_GENERIC_OAUTH_TOKEN_URL=http://keycloak:8080/realms/bre-platform/protocol/openid-connect/token
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    networks:
+      - bre-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+# ============================================================================
+# Volumes
+# ============================================================================
+volumes:
+  gorules-data:
+    driver: local
+  keycloak-data:
+    driver: local
+  postgres-data:
+    driver: local
+  bre-rules-cache:
+    driver: local
+  nginx-cache:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+# ============================================================================
+# Networks
+# ============================================================================
+networks:
+  bre-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

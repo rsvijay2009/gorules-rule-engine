@@ -1,0 +1,267 @@
+version: "1.0.0"
+facts:
+  # PAN-related facts
+  - name: pan_number
+    type: string
+    description: "Permanent Account Number (PAN) provided by the customer"
+    owner: kyc-team
+    lifecycle_state: ACTIVE
+    version: v1
+    source_system: kyc-service
+    validation_rules:
+      pattern: "^[A-Z]{5}[0-9]{4}[A-Z]{1}$"
+      min_length: 10
+      max_length: 10
+    tags:
+      - pii
+      - regulatory
+      - kyc
+    examples:
+      - "ABCDE1234F"
+      - "XYZPQ5678R"
+
+  - name: pan_verification_status
+    type: enum
+    description: "Status of PAN verification from external vendor (e.g., Karza)"
+    owner: kyc-team
+    lifecycle_state: ACTIVE
+    version: v1
+    source_system: karza-api
+    allowed_values:
+      - "VERIFIED"
+      - "NOT_VERIFIED"
+      - "INVALID"
+      - "PENDING"
+      - "ERROR"
+    default_value: "PENDING"
+    tags:
+      - kyc
+      - verification
+    examples:
+      - "VERIFIED"
+      - "NOT_VERIFIED"
+
+  - name: pan_name_match_score
+    type: number
+    description: "Fuzzy match score between PAN name and customer-provided name (0.0 to 1.0)"
+    owner: kyc-team
+    lifecycle_state: ACTIVE
+    version: v1
+    source_system: karza-api
+    validation_rules:
+      min: 0.0
+      max: 1.0
+    tags:
+      - kyc
+      - verification
+    examples:
+      - 0.95
+      - 0.87
+      - 1.0
+
+  # Customer demographic facts
+  - name: customer_age
+    type: integer
+    description: "Customer's age in years calculated from date of birth"
+    owner: kyc-team
+    lifecycle_state: ACTIVE
+    version: v1
+    source_system: customer-db
+    validation_rules:
+      min: 18
+      max: 120
+    tags:
+      - kyc
+      - demographic
+    examples:
+      - 25
+      - 42
+      - 65
+
+  - name: customer_state
+    type: enum
+    description: "Indian state where customer resides"
+    owner: kyc-team
+    lifecycle_state: ACTIVE
+    version: v1
+    source_system: customer-db
+    allowed_values:
+      - "ANDHRA_PRADESH"
+      - "KARNATAKA"
+      - "MAHARASHTRA"
+      - "TAMIL_NADU"
+      - "DELHI"
+      - "WEST_BENGAL"
+      - "GUJARAT"
+      - "RAJASTHAN"
+      - "UTTAR_PRADESH"
+      - "TELANGANA"
+      - "OTHER"
+    tags:
+      - kyc
+      - demographic
+    examples:
+      - "KARNATAKA"
+      - "MAHARASHTRA"
+
+  - name: customer_type
+    type: enum
+    description: "Customer classification based on business rules"
+    owner: kyc-team
+    lifecycle_state: ACTIVE
+    version: v1
+    source_system: customer-db
+    allowed_values:
+      - "RETAIL"
+      - "PREMIUM"
+      - "CORPORATE"
+      - "GOVERNMENT"
+    tags:
+      - kyc
+      - classification
+    examples:
+      - "RETAIL"
+      - "PREMIUM"
+
+  # CIBIL / Credit Bureau facts
+  - name: cibil_score
+    type: integer
+    description: "CIBIL credit score (300-900 range)"
+    owner: credit-team
+    lifecycle_state: ACTIVE
+    version: v1
+    source_system: cibil-api
+    validation_rules:
+      min: 300
+      max: 900
+    tags:
+      - credit
+      - kyc
+      - sensitive
+    examples:
+      - 750
+      - 680
+      - 820
+
+  - name: cibil_fetch_status
+    type: enum
+    description: "Status of CIBIL score fetch operation"
+    owner: credit-team
+    lifecycle_state: ACTIVE
+    version: v1
+    source_system: cibil-api
+    allowed_values:
+      - "SUCCESS"
+      - "FAILURE"
+      - "NO_HISTORY"
+      - "TIMEOUT"
+    tags:
+      - credit
+      - kyc
+    examples:
+      - "SUCCESS"
+      - "NO_HISTORY"
+
+  # Dedupe / Fraud facts
+  - name: dedupe_match_found
+    type: boolean
+    description: "Whether a duplicate customer record was found in the system"
+    owner: fraud-team
+    lifecycle_state: ACTIVE
+    version: v1
+    source_system: dedupe-service
+    default_value: false
+    tags:
+      - fraud
+      - kyc
+    examples:
+      - true
+      - false
+
+  - name: dedupe_match_confidence
+    type: number
+    description: "Confidence score of dedupe match (0.0 to 1.0)"
+    owner: fraud-team
+    lifecycle_state: ACTIVE
+    version: v1
+    source_system: dedupe-service
+    validation_rules:
+      min: 0.0
+      max: 1.0
+    tags:
+      - fraud
+      - kyc
+    examples:
+      - 0.92
+      - 0.78
+
+  # KYC Decision Output facts
+  - name: kyc_eligibility_status
+    type: enum
+    description: "Final KYC eligibility decision output"
+    owner: kyc-team
+    lifecycle_state: ACTIVE
+    version: v1
+    source_system: bre-platform
+    allowed_values:
+      - "APPROVED"
+      - "REJECTED"
+      - "MANUAL_REVIEW"
+      - "PENDING_DOCUMENTS"
+    tags:
+      - kyc
+      - decision
+    examples:
+      - "APPROVED"
+      - "MANUAL_REVIEW"
+
+  - name: kyc_rejection_reason
+    type: enum
+    description: "Reason code for KYC rejection"
+    owner: kyc-team
+    lifecycle_state: ACTIVE
+    version: v1
+    source_system: bre-platform
+    allowed_values:
+      - "PAN_INVALID"
+      - "PAN_NAME_MISMATCH"
+      - "AGE_BELOW_THRESHOLD"
+      - "CIBIL_SCORE_LOW"
+      - "DUPLICATE_CUSTOMER"
+      - "RESTRICTED_STATE"
+      - "INCOMPLETE_DOCUMENTS"
+    tags:
+      - kyc
+      - decision
+    examples:
+      - "PAN_INVALID"
+      - "CIBIL_SCORE_LOW"
+
+  # Audit & Metadata facts
+  - name: request_timestamp
+    type: datetime
+    description: "ISO 8601 timestamp when the decision request was made"
+    owner: platform-team
+    lifecycle_state: ACTIVE
+    version: v1
+    source_system: bre-platform
+    tags:
+      - audit
+      - metadata
+    examples:
+      - "2026-01-14T15:30:00Z"
+
+  - name: correlation_id
+    type: string
+    description: "Unique identifier for request tracing across systems"
+    owner: platform-team
+    lifecycle_state: ACTIVE
+    version: v1
+    source_system: bre-platform
+    validation_rules:
+      pattern: "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
+    tags:
+      - audit
+      - metadata
+    examples:
+      - "550e8400-e29b-41d4-a716-446655440000"
