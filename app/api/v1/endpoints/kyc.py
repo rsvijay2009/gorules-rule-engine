@@ -15,6 +15,7 @@ from datetime import datetime
 from typing import Optional
 from uuid import uuid4
 import logging
+from app.core.config import settings
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -39,7 +40,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/decisions/kyc", tags=["KYC Decisions"])
 
 # Initialize services
-rule_engine = MockRuleEngineService()  # Use MockRuleEngineService for demo
+rule_engine = MockRuleEngineService(rules_directory=settings.RULES_DIR)  # Use MockRuleEngineService for demo
 audit_service = get_audit_service()
 
 

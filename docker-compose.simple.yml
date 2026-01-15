@@ -61,52 +61,26 @@ services:
       start_period: 40s
 
   # ============================================================================
-  # GoRules Studio (Visual Rule Editor)
-  # NOTE: GoRules Studio is a commercial product. You need to either:
-  # 1. Build your own rule editor UI
-  # 2. Use the GoRules cloud version
-  # 3. Contact GoRules for self-hosted license
-  # For now, you can edit rules manually in the ./rules directory
+  # Custom Rule Editor (Visual Rule Editor)
+  # Built with Next.js to replace the commercial GoRules Studio
   # ============================================================================
-  # gorules-studio:
-  #   image: gorules/studio:latest
-  #   container_name: gorules-studio
-  #   ports:
-  #     - "3000:3000"
-  #   environment:
-  #     # Application Settings
-  #     - NODE_ENV=development
-  #     - PORT=3000
-  #     
-  #     # File System Mode (no Git integration for simplicity)
-  #     - STORAGE_MODE=filesystem
-  #     - RULES_PATH=/rules
-  #     
-  #     # Fact Registry Integration
-  #     - FACT_REGISTRY_ENABLED=true
-  #     - FACT_REGISTRY_URL=http://bre-platform:8000/api/v1/fact-registry/facts
-  #     
-  #     # Rule Testing Integration
-  #     - TEST_API_ENABLED=true
-  #     - TEST_API_URL=http://bre-platform:8000/api/v1/decisions/test
-  #     
-  #     # Disable Authentication for simple setup
-  #     - AUTH_ENABLED=false
-  #     
-  #   volumes:
-  #     # Mount rules directory for editing
-  #     - ./rules:/rules
-  #   networks:
-  #     - bre-network
-  #   depends_on:
-  #     - bre-platform
-  #   restart: unless-stopped
-  #   healthcheck:
-  #     test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 3
-  #     start_period: 40s
+  rule-editor:
+    build:
+      context: ./rule-editor
+      dockerfile: Dockerfile
+    container_name: rule-editor
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+    volumes:
+      # Mount rules directory for shared access with backend
+      - ./rules:/app/rules
+    networks:
+      - bre-network
+    depends_on:
+      - bre-platform
+    restart: unless-stopped
 
 # ============================================================================
 # Volumes

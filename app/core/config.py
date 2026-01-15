@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     
     # Rules
     RULES_SOURCE: str = "git"  # git, local, api
-    RULES_DIRECTORY: str = "rules"
+    RULES_DIR: str = "rules"
     GIT_REPO_URL: Optional[str] = None
     GIT_BRANCH: str = "main"
     GIT_TOKEN: Optional[str] = None

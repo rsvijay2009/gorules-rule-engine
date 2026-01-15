@@ -1,22 +1,20 @@
 # Enterprise Business Rule Engine Platform (GoRules + FastAPI)
 
-## 🚀 Quick Start (Simple Setup)
+## 🚀 Quick Start (Single Command)
 
-**For development and testing**, use the simplified setup with just the essential components:
+**To start all services** (Backend, Database, and Visual Rule Editor) at once:
 
 ```powershell
 # Windows
 .\start-simple.ps1
+```
 
-# Linux/Mac
+```bash
+# Linux / macOS
 chmod +x start-simple.sh && ./start-simple.sh
 ```
 
-Then access:
-- **GoRules Studio** (Rule Editor): http://localhost:3000
-- **BRE Platform API**: http://localhost:8000/docs
-
-📖 **See [SIMPLE_SETUP.md](SIMPLE_SETUP.md) for detailed guide**
+📖 **See [QUICK_START.md](QUICK_START.md) for a unified platform guide.**
 
 ---
 
