@@ -82,6 +82,7 @@ class KYCFactAdapter:
     # Mapping tables for normalization
     KARZA_STATUS_MAP = {
         "valid": PANVerificationStatus.VERIFIED,
+        "verified": PANVerificationStatus.VERIFIED,
         "invalid": PANVerificationStatus.INVALID,
         "pending": PANVerificationStatus.PENDING,
         "error": PANVerificationStatus.ERROR,

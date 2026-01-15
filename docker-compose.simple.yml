@@ -1,0 +1,123 @@
+version: '3.8'
+
+services:
+  # ============================================================================
+  # PostgreSQL (Audit Logs, Application Data)
+  # ============================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: bre-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=bre_platform
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - bre-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================================
+  # BRE Platform (FastAPI Decision Gateway)
+  # ============================================================================
+  bre-platform:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bre-platform
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - LOG_LEVEL=INFO
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/bre_platform
+      - RULES_DIR=/app/rules
+      - FACT_REGISTRY_DIR=/app/fact_registry
+      - AUDIT_ENABLED=true
+    volumes:
+      # Mount rules and fact registry for live editing
+      - ./rules:/app/rules
+      - ./fact_registry:/app/fact_registry
+      # Mount app code for development (optional - remove for production)
+      - ./app:/app/app
+    networks:
+      - bre-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ============================================================================
+  # GoRules Studio (Visual Rule Editor)
+  # NOTE: GoRules Studio is a commercial product. You need to either:
+  # 1. Build your own rule editor UI
+  # 2. Use the GoRules cloud version
+  # 3. Contact GoRules for self-hosted license
+  # For now, you can edit rules manually in the ./rules directory
+  # ============================================================================
+  # gorules-studio:
+  #   image: gorules/studio:latest
+  #   container_name: gorules-studio
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     # Application Settings
+  #     - NODE_ENV=development
+  #     - PORT=3000
+  #     
+  #     # File System Mode (no Git integration for simplicity)
+  #     - STORAGE_MODE=filesystem
+  #     - RULES_PATH=/rules
+  #     
+  #     # Fact Registry Integration
+  #     - FACT_REGISTRY_ENABLED=true
+  #     - FACT_REGISTRY_URL=http://bre-platform:8000/api/v1/fact-registry/facts
+  #     
+  #     # Rule Testing Integration
+  #     - TEST_API_ENABLED=true
+  #     - TEST_API_URL=http://bre-platform:8000/api/v1/decisions/test
+  #     
+  #     # Disable Authentication for simple setup
+  #     - AUTH_ENABLED=false
+  #     
+  #   volumes:
+  #     # Mount rules directory for editing
+  #     - ./rules:/rules
+  #   networks:
+  #     - bre-network
+  #   depends_on:
+  #     - bre-platform
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 40s
+
+# ============================================================================
+# Volumes
+# ============================================================================
+volumes:
+  postgres-data:
+    driver: local
+
+# ============================================================================
+# Networks
+# ============================================================================
+networks:
+  bre-network:
+    driver: bridge

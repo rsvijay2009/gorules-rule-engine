@@ -15,7 +15,12 @@ from datetime import datetime
 import json
 from pathlib import Path
 
-from zen_engine import ZenEngine  # type: ignore
+try:
+    from zen_engine import ZenEngine  # type: ignore
+    ZEN_ENGINE_AVAILABLE = True
+except ImportError:
+    ZenEngine = None
+    ZEN_ENGINE_AVAILABLE = False
 
 
 logger = logging.getLogger(__name__)
@@ -40,7 +45,12 @@ class RuleEngineService:
             rules_directory: Path to directory containing rule JSON files
         """
         self.rules_directory = Path(rules_directory)
-        self.engine = ZenEngine()
+        if ZEN_ENGINE_AVAILABLE and ZenEngine:
+            self.engine = ZenEngine()
+        else:
+            self.engine = None
+            logger.warning("ZenEngine is not available. Real rule evaluation will fail.")
+            
         self._rule_cache: Dict[str, Dict[str, Any]] = {}
         
         logger.info(f"RuleEngineService initialized with rules_dir={rules_directory}")

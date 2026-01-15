@@ -1,0 +1,129 @@
+version: "1.0.0"
+facts:
+  # Credit Application Facts
+  - name: credit_score
+    type: integer
+    description: "Credit score from credit bureau (300-900 range)"
+    owner: credit-team
+    lifecycle_state: ACTIVE
+    version: v1
+    source_system: credit-bureau-api
+    validation_rules:
+      min: 300
+      max: 900
+    tags:
+      - credit
+      - sensitive
+    examples:
+      - 720
+      - 680
+      - 800
+
+  - name: annual_income
+    type: number
+    description: "Annual income in INR"
+    owner: credit-team
+    lifecycle_state: ACTIVE
+    version: v1
+    source_system: customer-db
+    validation_rules:
+      min: 0
+    tags:
+      - credit
+      - financial
+    examples:
+      - 60000
+      - 120000
+      - 500000
+
+  - name: employment_years
+    type: integer
+    description: "Years of employment at current employer"
+    owner: credit-team
+    lifecycle_state: ACTIVE
+    version: v1
+    source_system: customer-db
+    validation_rules:
+      min: 0
+      max: 50
+    tags:
+      - credit
+      - employment
+    examples:
+      - 3
+      - 5
+      - 10
+
+  - name: employment_type
+    type: enum
+    description: "Type of employment"
+    owner: credit-team
+    lifecycle_state: ACTIVE
+    version: v1
+    source_system: customer-db
+    allowed_values:
+      - "SALARIED"
+      - "SELF_EMPLOYED"
+      - "BUSINESS_OWNER"
+      - "FREELANCER"
+      - "UNEMPLOYED"
+    tags:
+      - credit
+      - employment
+    examples:
+      - "SALARIED"
+      - "SELF_EMPLOYED"
+
+  # Credit Decision Output Facts
+  - name: approved
+    type: boolean
+    description: "Whether credit application is approved"
+    owner: credit-team
+    lifecycle_state: ACTIVE
+    version: v1
+    source_system: bre-platform
+    tags:
+      - credit
+      - decision
+    examples:
+      - true
+      - false
+
+  - name: credit_limit
+    type: number
+    description: "Approved credit limit in INR"
+    owner: credit-team
+    lifecycle_state: ACTIVE
+    version: v1
+    source_system: bre-platform
+    validation_rules:
+      min: 0
+    tags:
+      - credit
+      - decision
+    examples:
+      - 150000
+      - 300000
+      - 500000
+
+  - name: reason
+    type: enum
+    description: "Reason code for credit decision"
+    owner: credit-team
+    lifecycle_state: ACTIVE
+    version: v1
+    source_system: bre-platform
+    allowed_values:
+      - "EXCELLENT_PROFILE"
+      - "VERY_GOOD_PROFILE"
+      - "GOOD_PROFILE"
+      - "CREDIT_SCORE_LOW"
+      - "INCOME_TOO_LOW"
+      - "INSUFFICIENT_EMPLOYMENT"
+      - "HIGH_DEBT_RATIO"
+    tags:
+      - credit
+      - decision
+    examples:
+      - "EXCELLENT_PROFILE"
+      - "CREDIT_SCORE_LOW"

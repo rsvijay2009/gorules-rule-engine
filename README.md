@@ -1,5 +1,25 @@
 # Enterprise Business Rule Engine Platform (GoRules + FastAPI)
 
+## 🚀 Quick Start (Simple Setup)
+
+**For development and testing**, use the simplified setup with just the essential components:
+
+```powershell
+# Windows
+.\start-simple.ps1
+
+# Linux/Mac
+chmod +x start-simple.sh && ./start-simple.sh
+```
+
+Then access:
+- **GoRules Studio** (Rule Editor): http://localhost:3000
+- **BRE Platform API**: http://localhost:8000/docs
+
+📖 **See [SIMPLE_SETUP.md](SIMPLE_SETUP.md) for detailed guide**
+
+---
+
 ## Overview
 
 Production-grade Business Rule Engine platform for regulated fintech companies. Enables business users to manage rules visually without backend deployments while maintaining auditability, governance, and performance.
@@ -96,6 +116,20 @@ gorules-bre-platform/
 
 ## Quick Start
 
+### Simple Setup (Recommended for Development)
+
+```bash
+# Windows
+.\start-simple.ps1
+
+# Linux/Mac
+chmod +x start-simple.sh && ./start-simple.sh
+```
+
+See [SIMPLE_SETUP.md](SIMPLE_SETUP.md) for detailed instructions.
+
+### Full Setup (Production)
+
 ```bash
 # Install dependencies
 pip install -r requirements.txt
@@ -103,12 +137,14 @@ pip install -r requirements.txt
 # Run locally
 uvicorn app.main:app --reload
 
-# Run with Docker
+# Run with Docker (full stack)
 docker-compose up
 
 # Run tests
 pytest tests/ -v
 ```
+
+See [deployment/DEPLOYMENT_GUIDE.md](deployment/DEPLOYMENT_GUIDE.md) for production deployment.
 
 ## Core Components
 

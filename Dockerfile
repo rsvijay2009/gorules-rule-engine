@@ -40,11 +40,11 @@ COPY app/ ./app/
 COPY fact_registry/ ./fact_registry/
 COPY rules/ ./rules/
 
-# Create non-root user
-RUN useradd -m -u 1000 bre && \
-    chown -R bre:bre /app
+# Create non-root user (commented out for development to avoid volume mount permission issues)
+# RUN useradd -m -u 1000 bre && \
+#     chown -R bre:bre /app
 
-USER bre
+# USER bre
 
 # Expose port
 EXPOSE 8000

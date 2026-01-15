@@ -1,0 +1,143 @@
+{
+    "contentType": "application/vnd.gorules.decision",
+    "nodes": [
+        {
+            "id": "input-node",
+            "name": "Request",
+            "type": "inputNode",
+            "position": {
+                "x": 100,
+                "y": 200
+            }
+        },
+        {
+            "id": "decision-table-credit",
+            "name": "Credit Approval Decision",
+            "type": "decisionTableNode",
+            "position": {
+                "x": 400,
+                "y": 200
+            },
+            "content": {
+                "hitPolicy": "first",
+                "inputs": [
+                    {
+                        "id": "input-1",
+                        "name": "credit_score",
+                        "type": "expression",
+                        "field": "credit_score"
+                    },
+                    {
+                        "id": "input-2",
+                        "name": "annual_income",
+                        "type": "expression",
+                        "field": "annual_income"
+                    },
+                    {
+                        "id": "input-3",
+                        "name": "employment_years",
+                        "type": "expression",
+                        "field": "employment_years"
+                    }
+                ],
+                "outputs": [
+                    {
+                        "id": "output-1",
+                        "name": "approved",
+                        "type": "expression",
+                        "field": "approved"
+                    },
+                    {
+                        "id": "output-2",
+                        "name": "reason",
+                        "type": "expression",
+                        "field": "reason"
+                    },
+                    {
+                        "id": "output-3",
+                        "name": "credit_limit",
+                        "type": "expression",
+                        "field": "credit_limit"
+                    }
+                ],
+                "rules": [
+                    {
+                        "_description": "Excellent credit profile",
+                        "input-1": ">= 750",
+                        "input-2": ">= 80000",
+                        "input-3": ">= 3",
+                        "output-1": "true",
+                        "output-2": "\"EXCELLENT_PROFILE\"",
+                        "output-3": "500000"
+                    },
+                    {
+                        "_description": "Very good credit profile",
+                        "input-1": ">= 700",
+                        "input-2": ">= 60000",
+                        "input-3": ">= 2",
+                        "output-1": "true",
+                        "output-2": "\"VERY_GOOD_PROFILE\"",
+                        "output-3": "300000"
+                    },
+                    {
+                        "_description": "Good credit profile",
+                        "input-1": ">= 650",
+                        "input-2": ">= 40000",
+                        "input-3": ">= 1",
+                        "output-1": "true",
+                        "output-2": "\"GOOD_PROFILE\"",
+                        "output-3": "150000"
+                    },
+                    {
+                        "_description": "Credit score too low",
+                        "input-1": "< 650",
+                        "input-2": "",
+                        "input-3": "",
+                        "output-1": "false",
+                        "output-2": "\"CREDIT_SCORE_LOW\"",
+                        "output-3": "0"
+                    },
+                    {
+                        "_description": "Income too low",
+                        "input-1": ">= 650",
+                        "input-2": "< 40000",
+                        "input-3": "",
+                        "output-1": "false",
+                        "output-2": "\"INCOME_TOO_LOW\"",
+                        "output-3": "0"
+                    },
+                    {
+                        "_description": "Insufficient employment history",
+                        "input-1": ">= 650",
+                        "input-2": ">= 40000",
+                        "input-3": "< 1",
+                        "output-1": "false",
+                        "output-2": "\"INSUFFICIENT_EMPLOYMENT\"",
+                        "output-3": "0"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "output-node",
+            "name": "Response",
+            "type": "outputNode",
+            "position": {
+                "x": 700,
+                "y": 200
+            }
+        }
+    ],
+    "edges": [
+        {
+            "id": "edge-1",
+            "sourceId": "input-node",
+            "targetId": "decision-table-credit"
+        },
+        {
+            "id": "edge-2",
+            "sourceId": "decision-table-credit",
+            "targetId": "output-node"
+        }
+    ]
+}
